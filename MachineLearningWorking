@@ -1,0 +1,401 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled12.ipynb",
+      "provenance": [],
+      "collapsed_sections": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/laurahallaman1/final_project/blob/master/MachineLearningWorking\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "immF8PDn7I78",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# Install Java, Spark, and Findspark\n",
+        "!apt-get install openjdk-8-jdk-headless -qq > /dev/null\n",
+        "!wget -q http://www-us.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz\n",
+        "!tar xf spark-2.4.5-bin-hadoop2.7.tgz\n",
+        "!pip install -q findspark\n",
+        "\n",
+        "# Set Environment Variables\n",
+        "import os\n",
+        "os.environ[\"JAVA_HOME\"] = \"/usr/lib/jvm/java-8-openjdk-amd64\"\n",
+        "os.environ[\"SPARK_HOME\"] = \"/content/spark-2.4.5-bin-hadoop2.7\"\n",
+        "\n",
+        "# Start a SparkSession\n",
+        "import findspark\n",
+        "findspark.init()"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "_-uFfPlO7VgL",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# Start Spark session\n",
+        "from pyspark.sql import SparkSession\n",
+        "spark = SparkSession.builder.appName(\"NaiveBayes\").getOrCreate()"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "vPYk1jdU7c92",
+        "colab_type": "code",
+        "outputId": "6597ead5-450c-495f-ffa6-9fd53f62992f",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 649
+        }
+      },
+      "source": [
+        "from pyspark import SparkFiles\n",
+        "url =\"https://raw.githubusercontent.com/laurahallaman1/final_project/master/CSVs/Reviewer_Combined_Amazon_Consumer_Reviews.csv\"\n",
+        "spark.sparkContext.addFile(url)\n",
+        "df = spark.read.csv(SparkFiles.get(\"Reviewer_Combined_Amazon_Consumer_Reviews.csv\"), sep=\",\", header=True)\n",
+        "\n",
+        "# Show DataFrame\n",
+        "df.show(30)"
+      ],
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "+--------------------+--------------------+--------------------+--------------------+-----------+----------+------+--------------------+--------------------+--------+--------+\n",
+            "|                  id|                name|               asins|   primaryCategories|doRecommend|numHelpful|rating|                text|               title|username|reviewer|\n",
+            "+--------------------+--------------------+--------------------+--------------------+-----------+----------+------+--------------------+--------------------+--------+--------+\n",
+            "|AVpgdkC8ilAPnD_xsvyi|Fire Tablet 7 Dis...|          B018Y22BI4|         Electronics|       TRUE|         0|     3|Serves the purpos...|          Good price|     712|     Bot|\n",
+            "|AVqkIdZiv8e3D1O-leaJ|Fire Tablet with ...|          B018Y224PY|         Electronics|       TRUE|         0|     3|Serves the purpos...|          Good price|     712|     Bot|\n",
+            "|AVpjEN4jLJeJML43rpUe|Fire Tablet with ...|          B018Y225IA|         Electronics|       TRUE|         0|     3|Serves the purpos...|          Good price|     712|     Bot|\n",
+            "|AVqVGWQDv8e3D1O-ldFr|All-New Fire HD 8...|B018SZT3BK,B01AHB...|         Electronics|       TRUE|         0|     5|This tablet is sm...|        Great tablet|    1098|     Bot|\n",
+            "|AVqkIhxunnc1JgDc3kg_|Fire HD 8 Tablet ...|          B018T075DC|         Electronics|       TRUE|         0|     5|This tablet is sm...|        Great tablet|    1098|     Bot|\n",
+            "|AVpfw2hvilAPnD_xh0rH|Fire Kids Edition...|          B018Y226XO|Toys & Games,Elec...|       TRUE|         0|     3|This device is a ...| Good for 4 year old|    1234|     Bot|\n",
+            "|AVph0EeEilAPnD_x9myq|Fire Kids Edition...|          B018Y22C2Y|         Electronics|       TRUE|         0|     3|This device is a ...| Good for 4 year old|    1234|     Bot|\n",
+            "|AVqVGWLKnnc1JgDc3jF1|Fire Kids Edition...|          B018Y23MNM|         Electronics|       TRUE|         0|     3|This device is a ...| Good for 4 year old|    1234|     Bot|\n",
+            "|AVph0EeEilAPnD_x9myq|Fire Kids Edition...|          B018Y22C2Y|         Electronics|       TRUE|         0|     3|This device is a ...| Good for 4 year old|    1234|     Bot|\n",
+            "|AVpgdkC8ilAPnD_xsvyi|Fire Tablet 7 Dis...|          B018Y22BI4|         Electronics|       TRUE|         3|     5|Using for Pandora...|          Easy Setup|    1234|     Bot|\n",
+            "|AVqkIdZiv8e3D1O-leaJ|Fire Tablet with ...|          B018Y224PY|         Electronics|       TRUE|         2|     5|Using for Pandora...|          Easy Setup|    1234|     Bot|\n",
+            "|AVpjEN4jLJeJML43rpUe|Fire Tablet with ...|          B018Y225IA|         Electronics|       TRUE|         3|     5|Using for Pandora...|          Easy Setup|    1234|     Bot|\n",
+            "|AVpgdkC8ilAPnD_xsvyi|Fire Tablet 7 Dis...|          B018Y22BI4|         Electronics|       TRUE|         3|     5|Using for Pandora...|          Easy Setup|    1234|     Bot|\n",
+            "|AVpjEN4jLJeJML43rpUe|\"Brand New Amazon...|          B018Y225IA|         Electronics|       TRUE|         3|     5|Using for Pandora...|          Easy Setup|    1234|     Bot|\n",
+            "|AVqkIdZiv8e3D1O-leaJ|\"Fire Tablet with...|          B018Y224PY|         Electronics|       TRUE|         2|     5|Using for Pandora...|          Easy Setup|    1234|     Bot|\n",
+            "|AVpfpK8KLJeJML43BCuD|Amazon Tap Smart ...|          B01BH83OOM|         Electronics|       TRUE|         0|     4|Was a little diff...|          Amazon Tap|    1234|     Bot|\n",
+            "|AVpfpK8KLJeJML43BCuD|Amazon Tap - Alex...|          B01BH83OOM|         Electronics|       TRUE|         0|     4|Was a little diff...|          Amazon Tap|    1234|     Bot|\n",
+            "|AVqVGZN9QMlgsOJE6eUZ|Kindle Oasis E-re...|          B00REQKWGA|         Electronics|       TRUE|         0|     5|Wife love it, rea...|       great product|    1244|     Bot|\n",
+            "|AVqVGZO3nnc1JgDc3jGK|Kindle Oasis E-re...|          B00VINDBJK|   Electronics,Media|       TRUE|         0|     5|Wife love it, rea...|       great product|    1244|     Bot|\n",
+            "|AVqVGZQBQMlgsOJE6eUb|Kindle Oasis E-re...|          B00ZS0G0PG|   Electronics,Media|       TRUE|         0|     5|Wife love it, rea...|       great product|    1244|     Bot|\n",
+            "|AVqVGZO3nnc1JgDc3jGK|Kindle Oasis E-re...|          B00VINDBJK|   Electronics,Media|       TRUE|         0|     5|Wife love it, rea...|       great product|    1244|     Bot|\n",
+            "|AVqVGZN9QMlgsOJE6eUZ|\"Kindle Oasis E-r...|          B00REQKWGA|         Electronics|       TRUE|         0|     5|Wife love it, rea...|       great product|    1244|     Bot|\n",
+            "|AVqVGZN9QMlgsOJE6eUZ|\"Kindle Oasis E-r...|          B00REQKWGA|         Electronics|       TRUE|         0|     5|Wife love it, rea...|       great product|    1244|     Bot|\n",
+            "|AVpfw2hvilAPnD_xh0rH|Fire Kids Edition...|          B018Y226XO|Toys & Games,Elec...|       TRUE|         0|     5|Easy to use, hand...| Great for a toddler|    1254|     Bot|\n",
+            "|AVph0EeEilAPnD_x9myq|Fire Kids Edition...|          B018Y22C2Y|         Electronics|       TRUE|         0|     5|Easy to use, hand...| Great for a toddler|    1254|     Bot|\n",
+            "|AVqVGWLKnnc1JgDc3jF1|Fire Kids Edition...|          B018Y23MNM|         Electronics|       TRUE|         0|     5|Easy to use, hand...| Great for a toddler|    1254|     Bot|\n",
+            "|AVph0EeEilAPnD_x9myq|Fire Kids Edition...|          B018Y22C2Y|         Electronics|       TRUE|         0|     5|Easy to use, hand...| Great for a toddler|    1254|     Bot|\n",
+            "|AVpfw2hvilAPnD_xh0rH|Fire Kids Edition...|          B018Y226XO|Toys & Games,Elec...|       TRUE|         0|     5|Bought for my 2 y...|This is a great p...|    1612|     Bot|\n",
+            "|AVqVGWLKnnc1JgDc3jF1|Fire Kids Edition...|          B018Y23MNM|         Electronics|       TRUE|         0|     5|Bought for my 2 y...|This is a great p...|    1612|     Bot|\n",
+            "|AVqVGWLKnnc1JgDc3jF1|Fire Kids Edition...|          B018Y23MNM|         Electronics|       TRUE|         0|     5|Bought for my 2 y...|This is a great p...|    1612|     Bot|\n",
+            "+--------------------+--------------------+--------------------+--------------------+-----------+----------+------+--------------------+--------------------+--------+--------+\n",
+            "only showing top 30 rows\n",
+            "\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "YO7AB8FT8CH6",
+        "colab_type": "code",
+        "outputId": "04897483-e0c4-4336-a452-61b9419a9cd5",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 479
+        }
+      },
+      "source": [
+        "from pyspark.sql.functions import length\n",
+        "# Create a length column to be used as a future feature \n",
+        "data_df = df.withColumn('length', length(df['text']))\n",
+        "data_df.show()"
+      ],
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "+--------------------+--------------------+--------------------+--------------------+-----------+----------+------+--------------------+-------------------+--------+--------+------+\n",
+            "|                  id|                name|               asins|   primaryCategories|doRecommend|numHelpful|rating|                text|              title|username|reviewer|length|\n",
+            "+--------------------+--------------------+--------------------+--------------------+-----------+----------+------+--------------------+-------------------+--------+--------+------+\n",
+            "|AVpgdkC8ilAPnD_xsvyi|Fire Tablet 7 Dis...|          B018Y22BI4|         Electronics|       TRUE|         0|     3|Serves the purpos...|         Good price|     712|     Bot|    59|\n",
+            "|AVqkIdZiv8e3D1O-leaJ|Fire Tablet with ...|          B018Y224PY|         Electronics|       TRUE|         0|     3|Serves the purpos...|         Good price|     712|     Bot|    59|\n",
+            "|AVpjEN4jLJeJML43rpUe|Fire Tablet with ...|          B018Y225IA|         Electronics|       TRUE|         0|     3|Serves the purpos...|         Good price|     712|     Bot|    59|\n",
+            "|AVqVGWQDv8e3D1O-ldFr|All-New Fire HD 8...|B018SZT3BK,B01AHB...|         Electronics|       TRUE|         0|     5|This tablet is sm...|       Great tablet|    1098|     Bot|   119|\n",
+            "|AVqkIhxunnc1JgDc3kg_|Fire HD 8 Tablet ...|          B018T075DC|         Electronics|       TRUE|         0|     5|This tablet is sm...|       Great tablet|    1098|     Bot|   119|\n",
+            "|AVpfw2hvilAPnD_xh0rH|Fire Kids Edition...|          B018Y226XO|Toys & Games,Elec...|       TRUE|         0|     3|This device is a ...|Good for 4 year old|    1234|     Bot|    85|\n",
+            "|AVph0EeEilAPnD_x9myq|Fire Kids Edition...|          B018Y22C2Y|         Electronics|       TRUE|         0|     3|This device is a ...|Good for 4 year old|    1234|     Bot|    85|\n",
+            "|AVqVGWLKnnc1JgDc3jF1|Fire Kids Edition...|          B018Y23MNM|         Electronics|       TRUE|         0|     3|This device is a ...|Good for 4 year old|    1234|     Bot|    85|\n",
+            "|AVph0EeEilAPnD_x9myq|Fire Kids Edition...|          B018Y22C2Y|         Electronics|       TRUE|         0|     3|This device is a ...|Good for 4 year old|    1234|     Bot|    85|\n",
+            "|AVpgdkC8ilAPnD_xsvyi|Fire Tablet 7 Dis...|          B018Y22BI4|         Electronics|       TRUE|         3|     5|Using for Pandora...|         Easy Setup|    1234|     Bot|    98|\n",
+            "|AVqkIdZiv8e3D1O-leaJ|Fire Tablet with ...|          B018Y224PY|         Electronics|       TRUE|         2|     5|Using for Pandora...|         Easy Setup|    1234|     Bot|    98|\n",
+            "|AVpjEN4jLJeJML43rpUe|Fire Tablet with ...|          B018Y225IA|         Electronics|       TRUE|         3|     5|Using for Pandora...|         Easy Setup|    1234|     Bot|    98|\n",
+            "|AVpgdkC8ilAPnD_xsvyi|Fire Tablet 7 Dis...|          B018Y22BI4|         Electronics|       TRUE|         3|     5|Using for Pandora...|         Easy Setup|    1234|     Bot|    98|\n",
+            "|AVpjEN4jLJeJML43rpUe|\"Brand New Amazon...|          B018Y225IA|         Electronics|       TRUE|         3|     5|Using for Pandora...|         Easy Setup|    1234|     Bot|    98|\n",
+            "|AVqkIdZiv8e3D1O-leaJ|\"Fire Tablet with...|          B018Y224PY|         Electronics|       TRUE|         2|     5|Using for Pandora...|         Easy Setup|    1234|     Bot|    98|\n",
+            "|AVpfpK8KLJeJML43BCuD|Amazon Tap Smart ...|          B01BH83OOM|         Electronics|       TRUE|         0|     4|Was a little diff...|         Amazon Tap|    1234|     Bot|   180|\n",
+            "|AVpfpK8KLJeJML43BCuD|Amazon Tap - Alex...|          B01BH83OOM|         Electronics|       TRUE|         0|     4|Was a little diff...|         Amazon Tap|    1234|     Bot|   180|\n",
+            "|AVqVGZN9QMlgsOJE6eUZ|Kindle Oasis E-re...|          B00REQKWGA|         Electronics|       TRUE|         0|     5|Wife love it, rea...|      great product|    1244|     Bot|    55|\n",
+            "|AVqVGZO3nnc1JgDc3jGK|Kindle Oasis E-re...|          B00VINDBJK|   Electronics,Media|       TRUE|         0|     5|Wife love it, rea...|      great product|    1244|     Bot|    55|\n",
+            "|AVqVGZQBQMlgsOJE6eUb|Kindle Oasis E-re...|          B00ZS0G0PG|   Electronics,Media|       TRUE|         0|     5|Wife love it, rea...|      great product|    1244|     Bot|    55|\n",
+            "+--------------------+--------------------+--------------------+--------------------+-----------+----------+------+--------------------+-------------------+--------+--------+------+\n",
+            "only showing top 20 rows\n",
+            "\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "j3FCHw9Q8CL5",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from pyspark.ml.feature import Tokenizer, StopWordsRemover, HashingTF, IDF, StringIndexer\n",
+        "# Create all the features to the data set\n",
+        "reviewer_to_num = StringIndexer(inputCol='rating',outputCol='label')\n",
+        "tokenizer = Tokenizer(inputCol=\"text\", outputCol=\"token_text\")\n",
+        "stopremove = StopWordsRemover(inputCol='token_text',outputCol='stop_tokens')\n",
+        "hashingTF = HashingTF(inputCol=\"token_text\", outputCol='hash_token')\n",
+        "idf = IDF(inputCol='hash_token', outputCol='idf_token')"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "feYY7X0M8CPp",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from pyspark.ml.feature import VectorAssembler\n",
+        "from pyspark.ml.linalg import Vector\n",
+        "\n",
+        "# Create feature vectors\n",
+        "clean_up = VectorAssembler(inputCols=['idf_token', 'length'], outputCol='features')"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "2juqDrtC8CR8",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "# Create a and run a data processing Pipeline\n",
+        "from pyspark.ml import Pipeline\n",
+        "data_prep_pipeline = Pipeline(stages=[reviewer_to_num, tokenizer, stopremove, hashingTF, idf, clean_up])"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "la21Q4b49Gy5",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "cleaner = data_prep_pipeline.fit(data_df)\n",
+        "cleaned = cleaner.transform(data_df)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "hM9cHbWT9KX3",
+        "colab_type": "code",
+        "outputId": "679c181c-9250-404d-902f-ff7358811800",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 459
+        }
+      },
+      "source": [
+        "cleaned.select(['label', 'features']).show()"
+      ],
+      "execution_count": 9,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "+-----+--------------------+\n",
+            "|label|            features|\n",
+            "+-----+--------------------+\n",
+            "|  2.0|(262145,[16332,25...|\n",
+            "|  2.0|(262145,[16332,25...|\n",
+            "|  2.0|(262145,[16332,25...|\n",
+            "|  0.0|(262145,[15889,16...|\n",
+            "|  0.0|(262145,[15889,16...|\n",
+            "|  2.0|(262145,[15889,16...|\n",
+            "|  2.0|(262145,[15889,16...|\n",
+            "|  2.0|(262145,[15889,16...|\n",
+            "|  2.0|(262145,[15889,16...|\n",
+            "|  0.0|(262145,[12888,16...|\n",
+            "|  0.0|(262145,[12888,16...|\n",
+            "|  0.0|(262145,[12888,16...|\n",
+            "|  0.0|(262145,[12888,16...|\n",
+            "|  0.0|(262145,[12888,16...|\n",
+            "|  0.0|(262145,[12888,16...|\n",
+            "|  1.0|(262145,[14,2711,...|\n",
+            "|  1.0|(262145,[14,2711,...|\n",
+            "|  0.0|(262145,[15889,27...|\n",
+            "|  0.0|(262145,[15889,27...|\n",
+            "|  0.0|(262145,[15889,27...|\n",
+            "+-----+--------------------+\n",
+            "only showing top 20 rows\n",
+            "\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6LV87K0O8CWJ",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "from pyspark.ml.classification import NaiveBayes\n",
+        "# Break data down into a training set and a testing set\n",
+        "training, testing = cleaned.randomSplit([0.7, 0.3])\n",
+        "\n",
+        "# Create a Naive Bayes model and fit training data\n",
+        "nb = NaiveBayes()\n",
+        "predictor = nb.fit(training)"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eghUA-vV9S0R",
+        "colab_type": "code",
+        "outputId": "c82e01b8-812a-41b2-ada5-b88ca7d7cafd",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 224
+        }
+      },
+      "source": [
+        "test_results = predictor.transform(testing)\n",
+        "test_results.show(5)"
+      ],
+      "execution_count": 11,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "+--------------------+--------------------+--------------------+-----------------+-----------+----------+------+--------------------+--------------------+-----------------+--------+------+-----+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+----------+\n",
+            "|                  id|                name|               asins|primaryCategories|doRecommend|numHelpful|rating|                text|               title|         username|reviewer|length|label|          token_text|         stop_tokens|          hash_token|           idf_token|            features|       rawPrediction|         probability|prediction|\n",
+            "+--------------------+--------------------+--------------------+-----------------+-----------+----------+------+--------------------+--------------------+-----------------+--------+------+-----+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+----------+\n",
+            "|AV-ETMhgYSSHbkXwpNb9|All-New Kindle Oa...|          B06VTJWRJW|Electronics,Media|       TRUE|         1|     4|I absolutely love...|             Love it|         puglover| userBot|   132|  1.0|[i, absolutely, l...|[absolutely, love...|(262144,[5381,158...|(262144,[5381,158...|(262145,[5381,158...|[-646.21212954649...|[0.99999999999826...|       0.0|\n",
+            "|AV-EVZITKZqtpbFMSoqc|All-New Kindle Oa...|          B06XD5YCKX|Electronics,Media|       TRUE|         0|     5|This e reader is ...|           Great but|            David| userBot|   344|  0.0|[this, e, reader,...|[e, reader, great...|(262144,[663,9639...|(262144,[663,9639...|(262145,[663,9639...|[-3503.4343349018...|[0.99999346459290...|       0.0|\n",
+            "|AV-EVZITKZqtpbFMSoqc|All-New Kindle Oa...|          B06XD5YCKX|Electronics,Media|       TRUE|         3|     4|I love this so fa...|             Like it|          kcladyz| userBot|   208|  1.0|[i, love, this, s...|[love, far, downs...|(262144,[2711,111...|(262144,[2711,111...|(262145,[2711,111...|[-1558.8680441041...|[1.0,4.9563559037...|       0.0|\n",
+            "|AVpe6nyKLJeJML43yOe2|AmazonBasics 11.6...|B01B66989K,B00CD8...|      Electronics|       null|      null|     5|Recently, I spent...|Perfect. 342 peop...|         Don Juan| userBot|  1489|  0.0|[recently,, i, sp...|[recently,, spent...|(262144,[343,2306...|(262144,[343,2306...|(262145,[343,2306...|[-13172.589045065...|[1.0,0.0,0.0,0.0,...|       0.0|\n",
+            "|AVpe7xlELJeJML43ypLz|AmazonBasics AA P...|B00QWO9P0O,B01IB8...|  Health & Beauty|       null|      null|     1|2 out of the 8 ba...|Batteries popped ...|ByAmazon Customer|     Bot|   129|  3.0|[2, out, of, the,...|[2, 8, batteries,...|(262144,[9353,963...|(262144,[9353,963...|(262145,[9353,963...|[-944.01479896753...|[0.99999999966545...|       0.0|\n",
+            "+--------------------+--------------------+--------------------+-----------------+-----------+----------+------+--------------------+--------------------+-----------------+--------+------+-----+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+----------+\n",
+            "only showing top 5 rows\n",
+            "\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "Vm87NqCB9S5W",
+        "colab_type": "code",
+        "outputId": "40dc5b00-6b5d-4c27-fbda-71b84cef1069",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 34
+        }
+      },
+      "source": [
+        "# Use the Class Evaluator for a cleaner description\n",
+        "from pyspark.ml.evaluation import MulticlassClassificationEvaluator\n",
+        "\n",
+        "acc_eval = MulticlassClassificationEvaluator()\n",
+        "acc = acc_eval.evaluate(test_results)\n",
+        "print(\"Accuracy of model at predicting reviews was: %f\" % acc)"
+      ],
+      "execution_count": 12,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Accuracy of model at predicting reviews was: 0.709477\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "byTFIhg59S9B",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        ""
+      ],
+      "execution_count": 0,
+      "outputs": []
+    }
+  ]
+}
