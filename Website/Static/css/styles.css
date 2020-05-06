@@ -1,0 +1,27 @@
+html,
+
+.header {
+  background-color: #F1F1F1;
+  color: #ffffff; 
+  text-align: left;
+  padding: 20px;
+}
+.jumbotron {
+  background-color: #F1F1F1;
+  color: #545454;
+}
+
+p {
+    font-size: 16px;
+}
+.margin {
+    margin-bottom: 45px;
+}
+
+body {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font: 20px Montserrat, sans-serif;
+  line-height: 1.8;
+}
