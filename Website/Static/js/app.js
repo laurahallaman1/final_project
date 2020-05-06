@@ -23,12 +23,12 @@ appendTable(tableData);
 // on click event, selects the user-input "datetime" information and filters the table, displaying the filtered values
 function clickEvent() {
     d3.event.preventDefault();
-    var token = d3.select("#stop_tokens").property("value");
-    var filterStopTokens = tableData;
-    if (token) {
-        filterStopTokens = filterStopTokens.filter((row) => row.stop_tokens === token);
+    var reviewer = d3.select("#reviewer").property("value");
+    var filterreviewer = tableData;
+    if (reviewer) {
+        filterreviewer = filterreviewer.filter((row) => row.reviewer === reviewer);
     }
-    appendTable(filterStopTokens);
+    appendTable(filterreviewer);
 }
 // on click event (button) filters the data 
 d3.selectAll("#filter-btn").on("click", clickEvent);
